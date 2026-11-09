@@ -1,55 +1,50 @@
 
 import requests
 
-# GitHub API endpoint
-url = "https://api.github.com/search/issues"
 
-# Search parameters
-params = {
-    "q": 'is:issue is:open label:"good first issue" language:python',
-    "per_page": 10,
-    "sort": "updated",
-    "order": "desc"
-}
+def fetch_issues(language, label, count):
 
-# Request headers
-headers = {
-    "Accept": "application/vnd.github+json"
-}
+    url = "https://api.github.com/search/issues"
 
-# Send GET request
-response = requests.get(
-    url,
-    params=params,
-    headers=headers,
-    timeout=15
-)
+    params = {
+        "q": f'is:issue is:open label:"{label}" language:{language}',
+        "per_page": count,
+        "sort": "updated",
+        "order": "desc"
+    }
 
-# Check whether request was successful
-response.raise_for_status()
+    headers = {
+        "Accept": "application/vnd.github+json"
+    }
 
-# Convert JSON response into Python dictionary
-data = response.json()
+    response = requests.get(
+        url,
+        params=params,
+        headers=headers,
+        timeout=15
+    )
 
-# Extract issues
-issues = data["items"]
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["items"]
+
+
+# Fetch Python issues
+issues = fetch_issues("python", "good first issue", 10)
+
 
 # Display results
-print("\nOPEN SOURCE PYTHON ISSUES")
-print("=" * 50)
-
 for index, issue in enumerate(issues, start=1):
-
-    print(f"\n{index}. {issue['title']}")
 
     repository = issue["repository_url"].split("/repos/")[-1]
 
-    print("Repository:", repository)
-
     labels = [label["name"] for label in issue["labels"]]
 
+    print(f"\n{index}. {issue['title']}")
+    print("Repository:", repository)
     print("Labels:", ", ".join(labels))
-
     print("URL:", issue["html_url"])
 
-print("\nTotal issues found:", len(issues))
+print("\nTotal issues:", len(issues))
