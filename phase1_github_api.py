@@ -32,7 +32,7 @@ def fetch_issues(language, label, count):
 
 
 # Fetch Python issues
-issues = fetch_issues("python", "good first issue", 10)
+issues = fetch_issues("python", "bug", 15)
 
 
 # Display results
