@@ -51,6 +51,7 @@ class RecommendationItem(BaseModel):
     title_matched_skills: list[str]
     body_matched_skills: list[str]
     score: int
+    match_percentage: float
 
 
 class RecommendationSearchResponse(BaseModel):
@@ -202,7 +203,10 @@ def get_recommendations(request: RecommendationRequest):
 
         repository_url = issue.get("repository_url") or ""
 
-        repository = repository_url.rsplit("/", 1)[-1]
+        repository = (
+            repository_url.rsplit("/repos/")[-1] 
+            if repository_url else ""
+        )
 
         results.append({
             "id": issue["id"],
@@ -212,7 +216,8 @@ def get_recommendations(request: RecommendationRequest):
             "url": issue["url"],
             "title_matched_skills": issue["title_matched_skills"],
             "body_matched_skills": issue["body_matched_skills"],
-            "score": issue["score"]
+            "score": issue["score"],
+            "match_percentage": issue["match_percentage"],
         })
 
     return {

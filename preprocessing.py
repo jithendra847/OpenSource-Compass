@@ -51,33 +51,71 @@ def calculate_score(
 
     score = 0
 
-    # 15 points for every skill found in the title
-    score += len(title_matched_skills) * 15
+    # Title skill matches: 20 points each
+    score += len(title_matched_skills) * 20
 
-    # Find skills present only in the description
+    # Description-only skill matches: 8 points each
     body_only_skills = [
         skill for skill in body_matched_skills
         if skill not in title_matched_skills
     ]
 
-    # 5 points for every description-only skill
-    score += len(body_only_skills) * 5
+    score += len(body_only_skills) * 8
 
-    # 5 bonus points for good first issue
-    if any(
-        normalize_text(label) == "good first issue"
+    # Normalize labels
+    normalized_labels = [
+        normalize_text(label)
         for label in issue_labels
-    ):
+    ]
+
+    # Contribution label bonuses
+    if "good first issue" in normalized_labels:
         score += 5
+
+    if "help wanted" in normalized_labels:
+        score += 3
+
+    if "up for grabs" in normalized_labels:
+        score += 2
 
     return score
 
 
 # --------------------------------
-# 4. ISSUE RECOMMENDATION ENGINE
+# 4. MATCH PERCENTAGE CALCULATION
 # --------------------------------
 
-def recommend_issues(developer_skills, issues,min_score=10):
+def calculate_match_percentage(
+    developer_skills,
+    title_matched_skills,
+    body_matched_skills
+):
+
+    # Combine title and description matches
+    # set() prevents duplicate skill counting
+    matched_skills = set(
+        title_matched_skills + body_matched_skills
+    )
+
+    if not developer_skills:
+        return 0.0
+
+    match_percentage = (
+        len(matched_skills) / len(developer_skills)
+    ) * 100
+
+    return round(match_percentage, 2)
+
+
+# --------------------------------
+# 5. ISSUE RECOMMENDATION ENGINE
+# --------------------------------
+
+def recommend_issues(
+    developer_skills,
+    issues,
+    min_score=10
+):
 
     recommended = []
 
@@ -96,11 +134,13 @@ def recommend_issues(developer_skills, issues,min_score=10):
 
         # Match skills independently
         title_matched_skills = match_skills(
-            developer_skills, title
+            developer_skills,
+            title
         )
 
         body_matched_skills = match_skills(
-            developer_skills, body
+            developer_skills,
+            body
         )
 
         # Calculate weighted score
@@ -110,24 +150,32 @@ def recommend_issues(developer_skills, issues,min_score=10):
             issue_labels
         )
 
-        # Store recommendation details
-        if score>=min_score:
-         recommended.append({
-            "id": issue.get("id"),
-            "title": title,
-            "url": issue.get("html_url"),
-            "repository_url": issue.get("repository_url"),
-            "labels": issue_labels,
-            "title_matched_skills": title_matched_skills,
-            "body_matched_skills": body_matched_skills,
-            "score": score
-        })
+        # Calculate skill match percentage
+        match_percentage = calculate_match_percentage(
+            developer_skills,
+            title_matched_skills,
+            body_matched_skills
+        )
 
-    # Sort recommendations by score (highest first)
+        # Apply minimum score filtering
+        if score >= min_score:
+
+            recommended.append({
+                "id": issue.get("id"),
+                "title": title,
+                "url": issue.get("html_url"),
+                "repository_url": issue.get("repository_url"),
+                "labels": issue_labels,
+                "title_matched_skills": title_matched_skills,
+                "body_matched_skills": body_matched_skills,
+                "score": score,
+                "match_percentage": match_percentage
+            })
+
+    # Sort recommendations by weighted score
     recommended.sort(
         key=lambda item: item["score"],
         reverse=True
     )
 
     return recommended
-
