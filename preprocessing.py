@@ -172,10 +172,26 @@ def recommend_issues(
                 "match_percentage": match_percentage
             })
 
-    # Sort recommendations by weighted score
+# Sort recommendations using multiple ranking criteria
     recommended.sort(
-        key=lambda item: item["score"],
-        reverse=True
-    )
+     key=lambda item: (
+        item["score"],
+
+        len(set(
+            item["title_matched_skills"] +
+            item["body_matched_skills"]
+        )),
+
+        any(
+            normalize_text(label) in {
+                "good first issue",
+                "help wanted",
+                "up for grabs"
+            }
+            for label in item["labels"]
+        )
+    ),
+    reverse=True
+)
 
     return recommended
