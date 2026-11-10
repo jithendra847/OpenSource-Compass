@@ -9,6 +9,19 @@ class IssueSearch(BaseModel):
     label: str = "good first issue"
     count: int = Field(default=10, ge=1, le=50)
 
+
+class IssueResponse(BaseModel):
+    title: str
+    repository: str
+    labels: list[str]
+    url: str
+
+
+class IssueSearchResponse(BaseModel):
+    total: int
+    issues: list[IssueResponse]
+
+
 app = FastAPI(
     title="OpenSource Compass API",
     description="Discover beginner-friendly open-source issues",
@@ -25,7 +38,7 @@ def home():
 
 
 
-@app.get("/issues")
+@app.get("/issues", response_model=IssueSearchResponse)
 def get_issues(
     language: str = "python",
     label: str = "good first issue",
@@ -72,11 +85,6 @@ def get_issues(
     }
 
 
-@app.get("/hello/{username}")
-def say_hello(username: str):
-    return {
-        "message": f"Hello, {username}!"
-    }
 
 @app.post("/search-preview")
 def search_preview(search: IssueSearch):
@@ -87,9 +95,3 @@ def search_preview(search: IssueSearch):
         "count": search.count
     }
 
-@app.get("/demo-error")
-def demo_error():
-    raise HTTPException(
-        status_code=404,
-        detail="The requested resource was not found"
-    )
