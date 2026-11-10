@@ -1,5 +1,11 @@
 from fastapi import FastAPI
 from github_service import fetch_issues
+from pydantic import BaseModel, Field
+
+class IssueSearch(BaseModel):
+    language: str
+    label: str = "good first issue"
+    count: int = Field(default=10, ge=1, le=50)
 
 app = FastAPI(
     title="OpenSource Compass API",
@@ -47,4 +53,13 @@ def get_issues(
 def say_hello(username: str):
     return {
         "message": f"Hello, {username}!"
+    }
+
+@app.post("/search-preview")
+def search_preview(search: IssueSearch):
+    return {
+        "message": "Search parameters validated successfully!",
+        "language": search.language,
+        "label": search.label,
+        "count": search.count
     }
