@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+import requests
+from fastapi import FastAPI, HTTPException, Query
 from github_service import fetch_issues
 from pydantic import BaseModel, Field
+
 
 class IssueSearch(BaseModel):
     language: str
@@ -22,13 +24,33 @@ def home():
     }
 
 
+
 @app.get("/issues")
 def get_issues(
     language: str = "python",
     label: str = "good first issue",
-    count: int = 10
+    count: int = Query(default=10, ge=1, le=50)
 ):
-    issues = fetch_issues(language, label, count)
+    try:
+        issues = fetch_issues(language, label, count)
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=503,
+            detail="GitHub API request timed out. Please try again."
+        )
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to GitHub. Check your connection."
+        )
+
+    except requests.exceptions.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="GitHub returned an unsuccessful response."
+        )
 
     results = []
 
@@ -49,6 +71,7 @@ def get_issues(
         "issues": results
     }
 
+
 @app.get("/hello/{username}")
 def say_hello(username: str):
     return {
@@ -63,3 +86,10 @@ def search_preview(search: IssueSearch):
         "label": search.label,
         "count": search.count
     }
+
+@app.get("/demo-error")
+def demo_error():
+    raise HTTPException(
+        status_code=404,
+        detail="The requested resource was not found"
+    )
