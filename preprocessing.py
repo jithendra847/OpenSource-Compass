@@ -8,7 +8,6 @@ import re
 
 def normalize_text(text):
     text = text.lower()
-    text = re.sub(r"[^\w\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
 
     return text
@@ -31,7 +30,11 @@ def match_skills(developer_skills, issue_text):
         if not normalized_skill:
             continue
 
-        pattern = r"\b" + re.escape(normalized_skill) + r"\b"
+        pattern = (
+          r"(?<!\w)"
+          + re.escape(normalized_skill)
+          + r"(?!\w)"
+          )
 
         if re.search(pattern, issue_text):
             matched_skills.append(skill)
@@ -195,3 +198,13 @@ def recommend_issues(
 )
 
     return recommended
+
+skills = ["Java", "SQL", "C++"]
+
+text = """
+JavaScript is used for frontend development.
+PostgreSQL is used as the database.
+C++ is used for system programming.
+"""
+
+print(match_skills(skills, text))
