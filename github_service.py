@@ -3,11 +3,18 @@ import requests
 
 
 def fetch_issues(language, label, count):
-    
+
     url = "https://api.github.com/search/issues"
 
+    # Base query: fetch all open issues for the language
+    query = f"is:issue is:open language:{language}"
+
+    # Apply a label filter only when one is provided
+    if label:
+        query += f' label:"{label}"'
+
     params = {
-        "q": f'is:issue is:open label:"{label}" language:{language}',
+        "q": query,
         "per_page": count,
         "sort": "updated",
         "order": "desc"

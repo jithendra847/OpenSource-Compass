@@ -1,14 +1,34 @@
+
 import requests
+
 from fastapi import FastAPI, HTTPException, Query
-from github_service import fetch_issues
 from pydantic import BaseModel, Field
 
+from github_service import fetch_issues
+from preprocessing import recommend_issues
+
+
+# --------------------------------
+# 1. REQUEST MODELS
+# --------------------------------
 
 class IssueSearch(BaseModel):
     language: str
     label: str = "good first issue"
     count: int = Field(default=10, ge=1, le=50)
 
+
+class RecommendationRequest(BaseModel):
+    skills: list[str] = Field(min_length=1)
+    language: str = "python"
+    label: str | None = None
+    count: int = Field(default=20, ge=1, le=50)
+    min_score: int = Field(default=10, ge=0)
+
+
+# --------------------------------
+# 2. RESPONSE MODELS
+# --------------------------------
 
 class IssueResponse(BaseModel):
     title: str
@@ -22,12 +42,36 @@ class IssueSearchResponse(BaseModel):
     issues: list[IssueResponse]
 
 
+class RecommendationItem(BaseModel):
+    id: int | None = None
+    title: str
+    repository: str
+    labels: list[str]
+    url: str
+    title_matched_skills: list[str]
+    body_matched_skills: list[str]
+    score: int
+
+
+class RecommendationSearchResponse(BaseModel):
+    total: int
+    recommendations: list[RecommendationItem]
+
+
+# --------------------------------
+# 3. FASTAPI APPLICATION
+# --------------------------------
+
 app = FastAPI(
     title="OpenSource Compass API",
     description="Discover beginner-friendly open-source issues",
     version="0.1.0"
 )
 
+
+# --------------------------------
+# 4. HOME ENDPOINT
+# --------------------------------
 
 @app.get("/")
 def home():
@@ -37,6 +81,9 @@ def home():
     }
 
 
+# --------------------------------
+# 5. GITHUB ISSUE SEARCH
+# --------------------------------
 
 @app.get("/issues", response_model=IssueSearchResponse)
 def get_issues(
@@ -68,9 +115,13 @@ def get_issues(
     results = []
 
     for issue in issues:
+
         repository = issue["repository_url"].split("/repos/")[-1]
 
-        labels = [item["name"] for item in issue["labels"]]
+        labels = [
+            item["name"]
+            for item in issue["labels"]
+        ]
 
         results.append({
             "title": issue["title"],
@@ -85,9 +136,13 @@ def get_issues(
     }
 
 
+# --------------------------------
+# 6. SEARCH PREVIEW
+# --------------------------------
 
 @app.post("/search-preview")
 def search_preview(search: IssueSearch):
+
     return {
         "message": "Search parameters validated successfully!",
         "language": search.language,
@@ -95,3 +150,72 @@ def search_preview(search: IssueSearch):
         "count": search.count
     }
 
+
+# --------------------------------
+# 7. ISSUE RECOMMENDATION ENGINE
+# --------------------------------
+
+@app.post(
+    "/recommendations",
+    response_model=RecommendationSearchResponse
+)
+def get_recommendations(request: RecommendationRequest):
+
+    try:
+
+        # Fetch real GitHub issues
+        issues = fetch_issues(
+            request.language,
+            request.label,
+            request.count
+        )
+
+        # Pass fetched issues to our recommendation engine
+        recommendations = recommend_issues(
+            request.skills,
+            issues,
+            request.min_score
+        )
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=503,
+            detail="GitHub API request timed out. Please try again."
+        )
+
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to GitHub. Check your connection."
+        )
+
+    except requests.exceptions.HTTPError:
+        raise HTTPException(
+            status_code=502,
+            detail="GitHub returned an unsuccessful response."
+        )
+
+    # Prepare API response
+    results = []
+
+    for issue in recommendations:
+
+        repository_url = issue.get("repository_url") or ""
+
+        repository = repository_url.rsplit("/", 1)[-1]
+
+        results.append({
+            "id": issue["id"],
+            "title": issue["title"],
+            "repository": repository,
+            "labels": issue["labels"],
+            "url": issue["url"],
+            "title_matched_skills": issue["title_matched_skills"],
+            "body_matched_skills": issue["body_matched_skills"],
+            "score": issue["score"]
+        })
+
+    return {
+        "total": len(results),
+        "recommendations": results
+    }

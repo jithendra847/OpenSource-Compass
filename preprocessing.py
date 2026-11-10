@@ -77,7 +77,7 @@ def calculate_score(
 # 4. ISSUE RECOMMENDATION ENGINE
 # --------------------------------
 
-def recommend_issues(developer_skills, issues):
+def recommend_issues(developer_skills, issues,min_score=10):
 
     recommended = []
 
@@ -111,10 +111,12 @@ def recommend_issues(developer_skills, issues):
         )
 
         # Store recommendation details
-        recommended.append({
+        if score>=min_score:
+         recommended.append({
             "id": issue.get("id"),
             "title": title,
             "url": issue.get("html_url"),
+            "repository_url": issue.get("repository_url"),
             "labels": issue_labels,
             "title_matched_skills": title_matched_skills,
             "body_matched_skills": body_matched_skills,
@@ -128,3 +130,4 @@ def recommend_issues(developer_skills, issues):
     )
 
     return recommended
+
