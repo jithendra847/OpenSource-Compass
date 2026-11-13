@@ -1,6 +1,16 @@
 
 import re
 
+# --------------------------------
+# SKILL ALIASES
+# --------------------------------
+
+SKILL_ALIASES = {
+    "javascript": ["js"],
+    "python": ["py"],
+    "c++": ["cpp"],
+    "typescript": ["ts"],
+}
 
 # --------------------------------
 # 1. TEXT NORMALIZATION
@@ -30,14 +40,26 @@ def match_skills(developer_skills, issue_text):
         if not normalized_skill:
             continue
 
-        pattern = (
-          r"(?<!\w)"
-          + re.escape(normalized_skill)
-          + r"(?!\w)"
-          )
+        # Get alternative names for the skill
+        aliases = SKILL_ALIASES.get(normalized_skill, [])
 
-        if re.search(pattern, issue_text):
-            matched_skills.append(skill)
+        # Check both original skill and its aliases
+        skill_variations = [normalized_skill] + aliases
+
+        for variation in skill_variations:
+
+            pattern = (
+                r"(?<!\w)"
+                + re.escape(variation)
+                + r"(?!\w)"
+            )
+
+            if re.search(pattern, issue_text):
+
+                matched_skills.append(skill)
+
+                # Avoid duplicate matches for the same skill
+                break
 
     return matched_skills
 
@@ -110,6 +132,25 @@ def calculate_match_percentage(
     return round(match_percentage, 2)
 
 
+def calculate_label_priority(issue_labels):
+
+    normalized_labels = [
+        normalize_text(label)
+        for label in issue_labels
+    ]
+
+    if "good first issue" in normalized_labels:
+        return 3
+
+    elif "help wanted" in normalized_labels:
+        return 2
+
+    elif "up for grabs" in normalized_labels:
+        return 1
+
+    return 0
+
+
 # --------------------------------
 # 5. ISSUE RECOMMENDATION ENGINE
 # --------------------------------
@@ -177,7 +218,7 @@ def recommend_issues(
 
 # Sort recommendations using multiple ranking criteria
     recommended.sort(
-     key=lambda item: (
+    key=lambda item: (
         item["score"],
 
         len(set(
@@ -185,14 +226,7 @@ def recommend_issues(
             item["body_matched_skills"]
         )),
 
-        any(
-            normalize_text(label) in {
-                "good first issue",
-                "help wanted",
-                "up for grabs"
-            }
-            for label in item["labels"]
-        )
+        calculate_label_priority(item["labels"])
     ),
     reverse=True
 )
