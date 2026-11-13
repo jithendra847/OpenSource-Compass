@@ -199,12 +199,3 @@ def recommend_issues(
 
     return recommended
 
-skills = ["Java", "SQL", "C++"]
-
-text = """
-JavaScript is used for frontend development.
-PostgreSQL is used as the database.
-C++ is used for system programming.
-"""
-
-print(match_skills(skills, text))

@@ -2,7 +2,6 @@ from github_service import fetch_issues
 
 
 issues = fetch_issues("python", "good first issue", 10)
-print(issues[0])
 
 print("\nOPEN SOURCE PYTHON ISSUES")
 print("=" * 50)
