@@ -206,23 +206,23 @@ def recommend_issues(
                 "body_matched_skills": body_matched_skills,
                 "score": score,
                 "match_percentage": match_percentage,
-                "explanation": explanation
+                "explanation": explanation,
+                "created_at": issue.get("created_at", "")
             })
 
-# Sort recommendations using multiple ranking criteria
+    # Sort recommendations using multiple ranking criteria
     recommended.sort(
-    key=lambda item: (
-        item["score"],
-
-        len(set(
-            item["title_matched_skills"] +
-            item["body_matched_skills"]
-        )),
-
-        calculate_label_priority(item["labels"])
-    ),
-    reverse=True
-)
+        key=lambda item: (
+            item["score"],
+            len(set(
+                item["title_matched_skills"] +
+                item["body_matched_skills"]
+            )),
+            calculate_label_priority(item["labels"]),
+            item["created_at"]
+        ),
+        reverse=True
+    )
 
     return recommended
 

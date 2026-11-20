@@ -285,3 +285,29 @@ def test_generate_explanation_no_matches():
     )
 
     assert explanation == []
+
+def test_newer_issue_breaks_tie():
+    issues = [
+        {
+            "id": 101,
+            "title": "Python bug fix",
+            "body": "Fix a bug in Python",
+            "labels": [{"name": "good first issue"}],
+            "created_at": "2026-11-15T10:00:00Z"
+        },
+        {
+            "id": 102,
+            "title": "Python bug fix",
+            "body": "Fix a bug in Python",
+            "labels": [{"name": "good first issue"}],
+            "created_at": "2026-11-19T10:00:00Z"
+        }
+    ]
+
+    results = recommend_issues(
+        developer_skills=["Python"],
+        issues=issues
+    )
+
+    assert results[0]["id"] == 102
+    assert results[1]["id"] == 101
