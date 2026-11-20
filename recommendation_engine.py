@@ -1,23 +1,37 @@
 from preprocessing import match_skills, normalize_text
 
+# Scoring weights
+TITLE_SKILL_WEIGHT = 20
+BODY_SKILL_WEIGHT = 8
+
+GOOD_FIRST_ISSUE_BONUS = 5
+HELP_WANTED_BONUS = 3
+UP_FOR_GRABS_BONUS = 2
+
+# Ranking priorities
+GOOD_FIRST_ISSUE_PRIORITY = 3
+HELP_WANTED_PRIORITY = 2
+UP_FOR_GRABS_PRIORITY = 1
+
+DEFAULT_MIN_SCORE = 10
+
 def calculate_score(
     title_matched_skills,
     body_matched_skills,
     issue_labels
 ):
-
     score = 0
 
-    # Title skill matches: 20 points each
-    score += len(title_matched_skills) * 20
+    # Title skill matches
+    score += len(title_matched_skills) * TITLE_SKILL_WEIGHT
 
-    # Description-only skill matches: 8 points each
+    # Description-only skill matches
     body_only_skills = [
         skill for skill in body_matched_skills
         if skill not in title_matched_skills
     ]
 
-    score += len(body_only_skills) * 8
+    score += len(body_only_skills) * BODY_SKILL_WEIGHT
 
     # Normalize labels
     normalized_labels = [
@@ -27,13 +41,13 @@ def calculate_score(
 
     # Contribution label bonuses
     if "good first issue" in normalized_labels:
-        score += 5
+        score += GOOD_FIRST_ISSUE_BONUS
 
     if "help wanted" in normalized_labels:
-        score += 3
+        score += HELP_WANTED_BONUS
 
     if "up for grabs" in normalized_labels:
-        score += 2
+        score += UP_FOR_GRABS_BONUS
 
     return score
 
@@ -66,16 +80,15 @@ def calculate_label_priority(issue_labels):
     ]
 
     if "good first issue" in normalized_labels:
-        return 3
+        return GOOD_FIRST_ISSUE_PRIORITY
 
     elif "help wanted" in normalized_labels:
-        return 2
+        return HELP_WANTED_PRIORITY
 
     elif "up for grabs" in normalized_labels:
-        return 1
+        return UP_FOR_GRABS_PRIORITY
 
     return 0
-
 
 # --------------------------------
 # 5. ISSUE RECOMMENDATION ENGINE
@@ -84,7 +97,7 @@ def calculate_label_priority(issue_labels):
 def recommend_issues(
     developer_skills,
     issues,
-    min_score=10
+    min_score=DEFAULT_MIN_SCORE
 ):
 
     recommended = []
