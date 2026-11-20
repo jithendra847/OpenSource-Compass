@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from github_service import fetch_issues
-from preprocessing import recommend_issues
+from recommendation_engine import recommend_issues
 
 
 # --------------------------------
