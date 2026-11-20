@@ -283,3 +283,27 @@ def test_empty_skills_match_percentage():
     )
 
     assert result == 0.0
+
+def test_empty_skill_is_skipped():
+    assert match_skills(
+        ["Python", ""],
+        "Python developer needed"
+    ) == ["Python"]
+
+def test_up_for_grabs_adds_score():
+    issues = [
+        {
+            "id": 401,
+            "title": "Python developer",
+            "body": "",
+            "labels": [{"name": "up for grabs"}]
+        }
+    ]
+
+    result = recommend_issues(
+        ["Python"],
+        issues
+    )
+
+    assert len(result) == 1
+    assert result[0]["score"] == 22
