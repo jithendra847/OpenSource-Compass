@@ -52,6 +52,7 @@ class RecommendationItem(BaseModel):
     body_matched_skills: list[str]
     score: int
     match_percentage: float
+    explanation: list[str]
 
 
 class RecommendationSearchResponse(BaseModel):
@@ -218,6 +219,7 @@ def get_recommendations(request: RecommendationRequest):
             "body_matched_skills": issue["body_matched_skills"],
             "score": issue["score"],
             "match_percentage": issue["match_percentage"],
+            "explanation": issue["explanation"]
         })
 
     return {

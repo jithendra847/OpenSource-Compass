@@ -1,7 +1,8 @@
 from recommendation_engine import (
     calculate_label_priority,
     recommend_issues,
-    calculate_match_percentage
+    calculate_match_percentage,
+    generate_explanation
 )
 
 def test_good_first_issue_priority():
@@ -242,6 +243,8 @@ def test_empty_skills_match_percentage():
     )
 
     assert result == 0.0
+
+
 def test_up_for_grabs_adds_score():
     issues = [
         {
@@ -259,3 +262,26 @@ def test_up_for_grabs_adds_score():
 
     assert len(result) == 1
     assert result[0]["score"] == 22
+
+def test_generate_explanation():
+    explanation = generate_explanation(
+        title_matched_skills=["Python"],
+        body_matched_skills=["Python", "FastAPI"],
+        issue_labels=["good first issue", "help wanted"]
+    )
+
+    assert "Python matched in title (+20)" in explanation
+    assert "FastAPI matched in description (+8)" in explanation
+    assert "Good first issue label (+5)" in explanation
+    assert "Help wanted label (+3)" in explanation
+    assert len(explanation) == 4
+
+
+def test_generate_explanation_no_matches():
+    explanation = generate_explanation(
+        title_matched_skills=[],
+        body_matched_skills=[],
+        issue_labels=[]
+    )
+
+    assert explanation == []

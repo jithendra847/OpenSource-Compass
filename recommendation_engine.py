@@ -51,6 +51,54 @@ def calculate_score(
 
     return score
 
+def generate_explanation(
+    title_matched_skills,
+    body_matched_skills,
+    issue_labels
+):
+    explanation = []
+
+    # Title skill matches
+    for skill in title_matched_skills:
+        explanation.append(
+            f"{skill} matched in title (+{TITLE_SKILL_WEIGHT})"
+        )
+
+    # Description-only skill matches
+    body_only_skills = [
+        skill for skill in body_matched_skills
+        if skill not in title_matched_skills
+    ]
+
+    for skill in body_only_skills:
+        explanation.append(
+            f"{skill} matched in description (+{BODY_SKILL_WEIGHT})"
+        )
+
+    # Normalize labels
+    normalized_labels = [
+        normalize_text(label)
+        for label in issue_labels
+    ]
+
+    # Contribution label bonuses
+    if "good first issue" in normalized_labels:
+        explanation.append(
+            f"Good first issue label (+{GOOD_FIRST_ISSUE_BONUS})"
+        )
+
+    if "help wanted" in normalized_labels:
+        explanation.append(
+            f"Help wanted label (+{HELP_WANTED_BONUS})"
+        )
+
+    if "up for grabs" in normalized_labels:
+        explanation.append(
+            f"Up for grabs label (+{UP_FOR_GRABS_BONUS})"
+        )
+
+    return explanation
+
 def calculate_match_percentage(
     developer_skills,
     title_matched_skills,
@@ -142,6 +190,11 @@ def recommend_issues(
 
         # Apply minimum score filtering
         if score >= min_score:
+            explanation = generate_explanation(
+               title_matched_skills,
+               body_matched_skills,
+               issue_labels
+               )
 
             recommended.append({
                 "id": issue.get("id"),
@@ -152,7 +205,8 @@ def recommend_issues(
                 "title_matched_skills": title_matched_skills,
                 "body_matched_skills": body_matched_skills,
                 "score": score,
-                "match_percentage": match_percentage
+                "match_percentage": match_percentage,
+                "explanation": explanation
             })
 
 # Sort recommendations using multiple ranking criteria
