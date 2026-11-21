@@ -11,8 +11,23 @@ class Difficulty(str, Enum):
 class DifficultyAnalysis(BaseModel):
     difficulty: Difficulty
     reason: str = Field(min_length=1)
-from pydantic import BaseModel, Field
 
 
 class IssueSummary(BaseModel):
     summary: str = Field(min_length=1)
+
+
+class Recommendation(str, Enum):
+    READY = "Ready to try"
+    PREPARE = "Prepare first"
+    STRETCH = "Stretch challenge"
+
+
+class SuitabilityAnalysis(BaseModel):
+    fit_score: int = Field(ge=0, le=100)
+    suitable: bool
+    matched_skills: list[str]
+    missing_skills: list[str]
+    recommendation: Recommendation
+    reason: str = Field(min_length=1)
+    preparation_skills: list[str]
