@@ -11,3 +11,8 @@ class Difficulty(str, Enum):
 class DifficultyAnalysis(BaseModel):
     difficulty: Difficulty
     reason: str = Field(min_length=1)
+from pydantic import BaseModel, Field
+
+
+class IssueSummary(BaseModel):
+    summary: str = Field(min_length=1)
