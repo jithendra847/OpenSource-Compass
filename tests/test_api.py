@@ -411,3 +411,47 @@ def test_recommendations_minimum_score_filter(monkeypatch):
     assert data["total"] == 0
     assert data["recommendations"] == []
     assert data["total"] == len(data["recommendations"])
+
+
+def test_recommendations_github_request_error(monkeypatch):
+
+    def mock_fetch_issues(language, label, count):
+        raise requests.exceptions.RequestException("GitHub request failed")
+
+    monkeypatch.setattr(
+        app_module,
+        "fetch_issues",
+        mock_fetch_issues
+    )
+
+    response = client.post(
+        "/recommendations",
+        json={
+            "skills": ["Python"],
+            "language": "python"
+        }
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "GitHub request failed. Please try again."
+    )
+
+
+def test_get_issues_github_request_error(monkeypatch):
+
+    def mock_fetch_issues(language, label, count):
+        raise requests.exceptions.RequestException("GitHub request failed")
+
+    monkeypatch.setattr(
+        app_module,
+        "fetch_issues",
+        mock_fetch_issues
+    )
+
+    response = client.get("/issues")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "GitHub request failed. Please try again."
+    )

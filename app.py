@@ -114,6 +114,12 @@ def get_issues(
             detail="GitHub returned an unsuccessful response."
         )
 
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code=502,
+            detail="GitHub request failed. Please try again."
+        )
+
     results = []
 
     for issue in issues:
@@ -195,6 +201,12 @@ def get_recommendations(request: RecommendationRequest):
         raise HTTPException(
             status_code=502,
             detail="GitHub returned an unsuccessful response."
+        )
+
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code=502,
+            detail="GitHub request failed. Please try again."
         )
 
     # Prepare API response
