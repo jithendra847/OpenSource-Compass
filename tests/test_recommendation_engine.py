@@ -311,3 +311,56 @@ def test_newer_issue_breaks_tie():
 
     assert results[0]["id"] == 102
     assert results[1]["id"] == 101
+
+def test_help_wanted_label_variants():
+    issues = [
+        {
+            "id": 501,
+            "title": "Python developer needed",
+            "body": "",
+            "labels": [{"name": "help-wanted"}]
+        }
+    ]
+
+    result = recommend_issues(
+        ["Python"],
+        issues
+    )
+
+    assert len(result) == 1
+    assert result[0]["score"] == 23
+
+def test_help_wanted_underscore_variant():
+    issues = [
+        {
+            "id": 502,
+            "title": "Python developer needed",
+            "body": "",
+            "labels": [{"name": "help_wanted"}]
+        }
+    ]
+
+    result = recommend_issues(
+        ["Python"],
+        issues
+    )
+
+    assert len(result) == 1
+    assert result[0]["score"] == 23
+
+def test_help_wanted_hyphen_explanation():
+    explanation = generate_explanation(
+        title_matched_skills=["Python"],
+        body_matched_skills=["Python"],
+        issue_labels=["help-wanted"]
+    )
+
+    assert "Help wanted label (+3)" in explanation
+
+
+def test_help_wanted_hyphen_priority():
+    assert calculate_label_priority(["help-wanted"]) == 2
+
+
+def test_up_for_grabs_hyphen_priority():
+    assert calculate_label_priority(["up-for-grabs"]) == 1

@@ -15,6 +15,11 @@ UP_FOR_GRABS_PRIORITY = 1
 
 DEFAULT_MIN_SCORE = 10
 
+def normalize_label(label):
+    label = normalize_text(label)
+    label = label.replace("-", " ").replace("_", " ")
+    return normalize_text(label)
+
 def calculate_score(
     title_matched_skills,
     body_matched_skills,
@@ -35,7 +40,7 @@ def calculate_score(
 
     # Normalize labels
     normalized_labels = [
-        normalize_text(label)
+        normalize_label(label)
         for label in issue_labels
     ]
 
@@ -77,7 +82,7 @@ def generate_explanation(
 
     # Normalize labels
     normalized_labels = [
-        normalize_text(label)
+        normalize_label(label)
         for label in issue_labels
     ]
 
@@ -123,7 +128,7 @@ def calculate_match_percentage(
 def calculate_label_priority(issue_labels):
 
     normalized_labels = [
-        normalize_text(label)
+        normalize_label(label)
         for label in issue_labels
     ]
 
