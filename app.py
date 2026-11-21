@@ -13,17 +13,50 @@ from recommendation_engine import recommend_issues
 # --------------------------------
 
 class IssueSearch(BaseModel):
-    language: str
-    label: str = "good first issue"
-    count: int = Field(default=10, ge=1, le=50)
+    """Parameters used to validate a GitHub issue search."""
+
+    language: str = Field(
+        description="Programming language of the repositories to search."
+    )
+    label: str = Field(
+        default="good first issue",
+        description="GitHub issue label used to filter results."
+    )
+    count: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of issues to request (1-50)."
+    )
 
 
 class RecommendationRequest(BaseModel):
-    skills: list[str] = Field(min_length=1)
-    language: str = Field(default="python", min_length=1)
-    label: str | None = None
-    count: int = Field(default=20, ge=1, le=50)
-    min_score: int = Field(default=10, ge=0)
+    """Parameters for personalized issue recommendations."""
+
+    skills: list[str] = Field(
+        min_length=1,
+        description="Programming languages and technologies the developer knows."
+    )
+    language: str = Field(
+        default="python",
+        min_length=1,
+        description="Programming language used to filter repositories."
+    )
+    label: str | None = Field(
+        default=None,
+        description="Optional GitHub issue label filter."
+    )
+    count: int = Field(
+        default=20,
+        ge=1,
+        le=50,
+        description="Number of GitHub issues to analyze (1-50)."
+    )
+    min_score: int = Field(
+        default=10,
+        ge=0,
+        description="Minimum recommendation score required for an issue."
+    )
 
 
 # --------------------------------
@@ -31,6 +64,8 @@ class RecommendationRequest(BaseModel):
 # --------------------------------
 
 class IssueResponse(BaseModel):
+    """A simplified GitHub issue returned by the API."""
+
     title: str
     repository: str
     labels: list[str]
@@ -38,11 +73,15 @@ class IssueResponse(BaseModel):
 
 
 class IssueSearchResponse(BaseModel):
+    """Response containing the total number of issues and issue results."""
+
     total: int
     issues: list[IssueResponse]
 
 
 class RecommendationItem(BaseModel):
+    """An issue ranked by skill relevance."""
+
     id: int | None = None
     title: str
     repository: str
@@ -56,6 +95,8 @@ class RecommendationItem(BaseModel):
 
 
 class RecommendationSearchResponse(BaseModel):
+    """Response containing personalized issue recommendations."""
+
     total: int
     recommendations: list[RecommendationItem]
 
@@ -66,8 +107,40 @@ class RecommendationSearchResponse(BaseModel):
 
 app = FastAPI(
     title="OpenSource Compass API",
-    description="Discover beginner-friendly open-source issues",
-    version="0.1.0"
+    description="""
+# OpenSource Compass
+
+Discover beginner-friendly open-source issues and find contributions
+that match your programming skills.
+
+## Features
+- Search GitHub issues by programming language and label.
+- Receive skill-based issue recommendations.
+- See matched skills, recommendation scores, and explanations.
+- Validate search parameters before making requests.
+
+## How to use
+1. Search for issues using `/issues`.
+2. Submit your skills using `/recommendations`.
+3. Review scores and explanations to choose issues.
+
+GitHub is the external data source for issue discovery.
+""",
+    version="0.1.0",
+    openapi_tags=[
+        {
+            "name": "General",
+            "description": "General API information and status."
+        },
+        {
+            "name": "Issues",
+            "description": "Search and validate GitHub issue discovery parameters."
+        },
+        {
+            "name": "Recommendations",
+            "description": "Find open-source issues based on developer skills."
+        }
+    ]
 )
 
 
@@ -75,7 +148,15 @@ app = FastAPI(
 # 4. HOME ENDPOINT
 # --------------------------------
 
-@app.get("/")
+@app.get(
+    "/",
+    tags=["General"],
+    summary="API health check",
+    description="Check whether OpenSource Compass API is running.",
+    responses={
+        200: {"description": "API is running successfully."}
+    }
+)
 def home():
     return {
         "message": "Welcome to OpenSource Compass API!",
@@ -87,11 +168,39 @@ def home():
 # 5. GITHUB ISSUE SEARCH
 # --------------------------------
 
-@app.get("/issues", response_model=IssueSearchResponse)
+@app.get(
+    "/issues",
+    response_model=IssueSearchResponse,
+    tags=["Issues"],
+    summary="Search GitHub issues",
+    description="""
+Fetch open GitHub issues using a programming language and issue label.
+
+The results include issue titles, repository names, labels, and GitHub URLs.
+""",
+    responses={
+        200: {"description": "Issues retrieved successfully."},
+        422: {"description": "Invalid search parameters."},
+        502: {"description": "GitHub returned an unsuccessful response."},
+        503: {"description": "GitHub timed out or could not be reached."}
+    }
+)
 def get_issues(
-    language: str = Query(default="python", min_length=1),
-    label: str = "good first issue",
-    count: int = Query(default=10, ge=1, le=50)
+    language: str = Query(
+        default="python",
+        min_length=1,
+        description="Programming language used to filter repositories."
+    ),
+    label: str = Query(
+        default="good first issue",
+        description="GitHub issue label to search for."
+    ),
+    count: int = Query(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of issues to retrieve (1-50)."
+    )
 ):
     try:
         issues = fetch_issues(language, label, count)
@@ -148,7 +257,20 @@ def get_issues(
 # 6. SEARCH PREVIEW
 # --------------------------------
 
-@app.post("/search-preview")
+@app.post(
+    "/search-preview",
+    tags=["Issues"],
+    summary="Preview validated search parameters",
+    description="""
+Validate issue search parameters without making a GitHub API request.
+
+Useful for checking the language, label, and result count before searching.
+""",
+    responses={
+        200: {"description": "Search parameters validated successfully."},
+        422: {"description": "Invalid request body or parameter values."}
+    }
+)
 def search_preview(search: IssueSearch):
 
     return {
@@ -165,7 +287,29 @@ def search_preview(search: IssueSearch):
 
 @app.post(
     "/recommendations",
-    response_model=RecommendationSearchResponse
+    response_model=RecommendationSearchResponse,
+    tags=["Recommendations"],
+    summary="Recommend issues based on developer skills",
+    description="""
+Find open-source issues that match the developer's skills.
+
+Issues are fetched from GitHub and processed by the recommendation engine.
+Matching skills, relevance scores, match percentages, and explanations
+are returned to help developers decide which issues to work on.
+
+### Recommendation parameters
+- **skills:** Skills you know, such as Python, JavaScript, or C++.
+- **language:** Repository programming language filter.
+- **label:** Optional issue label filter.
+- **count:** Number of issues to analyze (1-50).
+- **min_score:** Minimum score required for an issue to be recommended.
+""",
+    responses={
+        200: {"description": "Recommendations generated successfully."},
+        422: {"description": "Invalid request body or parameter values."},
+        502: {"description": "GitHub returned an unsuccessful response."},
+        503: {"description": "GitHub timed out or could not be reached."}
+    }
 )
 def get_recommendations(request: RecommendationRequest):
 
@@ -217,7 +361,7 @@ def get_recommendations(request: RecommendationRequest):
         repository_url = issue.get("repository_url") or ""
 
         repository = (
-            repository_url.rsplit("/repos/")[-1] 
+            repository_url.rsplit("/repos/")[-1]
             if repository_url else ""
         )
 

@@ -506,3 +506,70 @@ def test_recommendations_empty_language():
     )
 
     assert response.status_code == 422
+
+# --------------------------------
+# M6.5 - API DOCUMENTATION TESTS
+# --------------------------------
+
+def test_openapi_api_metadata():
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["info"]["title"] == "OpenSource Compass API"
+    assert data["info"]["version"] == "0.1.0"
+    assert "beginner-friendly open-source issues" in data["info"]["description"]
+
+
+def test_openapi_endpoint_tags():
+    response = client.get("/openapi.json")
+    data = response.json()
+
+    assert data["paths"]["/"]["get"]["tags"] == ["General"]
+    assert data["paths"]["/issues"]["get"]["tags"] == ["Issues"]
+    assert data["paths"]["/search-preview"]["post"]["tags"] == ["Issues"]
+    assert data["paths"]["/recommendations"]["post"]["tags"] == [
+        "Recommendations"
+    ]
+
+
+def test_openapi_endpoint_documentation():
+    response = client.get("/openapi.json")
+    data = response.json()
+
+    endpoints = [
+        data["paths"]["/"]["get"],
+        data["paths"]["/issues"]["get"],
+        data["paths"]["/search-preview"]["post"],
+        data["paths"]["/recommendations"]["post"]
+    ]
+
+    for endpoint in endpoints:
+        assert endpoint["summary"]
+        assert endpoint["description"]
+
+
+def test_openapi_request_model_documentation():
+    response = client.get("/openapi.json")
+    data = response.json()
+
+    schemas = data["components"]["schemas"]
+
+    recommendation_schema = schemas["RecommendationRequest"]["properties"]
+
+    assert recommendation_schema["skills"]["minItems"] == 1
+    assert recommendation_schema["skills"]["description"]
+
+    assert recommendation_schema["count"]["minimum"] == 1
+    assert recommendation_schema["count"]["maximum"] == 50
+
+    assert recommendation_schema["min_score"]["minimum"] == 0
+    assert recommendation_schema["min_score"]["description"]
+
+    issue_search_schema = schemas["IssueSearch"]["properties"]
+
+    assert issue_search_schema["count"]["minimum"] == 1
+    assert issue_search_schema["count"]["maximum"] == 50
+    assert issue_search_schema["language"]["description"]
