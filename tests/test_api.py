@@ -46,6 +46,38 @@ def test_recommendations_success(monkeypatch):
     assert data["recommendations"][0]["title"] == "Fix Python authentication bug"
     assert data["recommendations"][0]["repository"] == "example/project"
     assert data["recommendations"][0]["score"] == 25
+    recommendation = data["recommendations"][0]
+    assert set(recommendation.keys()) == {
+        "id",
+        "title",
+        "repository",
+        "labels",
+        "url",
+        "title_matched_skills",
+        "body_matched_skills",
+        "score",
+        "match_percentage",
+        "explanation"
+    }
+
+    assert recommendation["id"] == 101
+    assert recommendation["url"] == "https://github.com/example/project/issues/101"
+    assert recommendation["labels"] == ["good first issue"]
+
+    assert recommendation["title_matched_skills"] == ["Python"]
+    assert recommendation["body_matched_skills"] == ["Python"]
+
+    assert recommendation["match_percentage"] == 100.0
+    assert recommendation["explanation"] == [
+        "Python matched in title (+20)",
+        "Good first issue label (+5)"
+    ]
+
+    assert data["total"] == len(data["recommendations"])
+
+    assert isinstance(recommendation["score"], int)
+
+    assert 0.0 <= recommendation["match_percentage"] <= 100.0
 
 def test_recommendations_no_matching_skills(monkeypatch):
 
@@ -83,6 +115,7 @@ def test_recommendations_no_matching_skills(monkeypatch):
 
     assert data["total"] == 0
     assert data["recommendations"] == []
+    assert data["total"] == len(data["recommendations"])
 
 
 def test_recommendations_empty_skills():
@@ -377,3 +410,4 @@ def test_recommendations_minimum_score_filter(monkeypatch):
 
     assert data["total"] == 0
     assert data["recommendations"] == []
+    assert data["total"] == len(data["recommendations"])
