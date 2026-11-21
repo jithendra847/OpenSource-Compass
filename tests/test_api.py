@@ -47,6 +47,43 @@ def test_recommendations_success(monkeypatch):
     assert data["recommendations"][0]["repository"] == "example/project"
     assert data["recommendations"][0]["score"] == 25
 
+def test_recommendations_no_matching_skills(monkeypatch):
+
+    sample_issues = [
+        {
+            "id": 102,
+            "title": "Fix Java database connection",
+            "body": "Improve Java backend performance.",
+            "repository_url": "https://api.github.com/repos/example/java-project",
+            "html_url": "https://github.com/example/java-project/issues/102",
+            "labels": [
+                {"name": "bug"}
+            ]
+        }
+    ]
+
+    monkeypatch.setattr(
+        app_module,
+        "fetch_issues",
+        lambda language, label, count: sample_issues
+    )
+
+    response = client.post(
+        "/recommendations",
+        json={
+            "skills": ["Python"],
+            "language": "python",
+            "min_score": 10
+        }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 0
+    assert data["recommendations"] == []
+
 
 def test_recommendations_empty_skills():
 
@@ -305,3 +342,38 @@ def test_get_issues_github_http_error(monkeypatch):
     assert response.json()["detail"] == (
         "GitHub returned an unsuccessful response."
     )
+
+def test_recommendations_minimum_score_filter(monkeypatch):
+
+    sample_issues = [
+        {
+            "id": 103,
+            "title": "Fix Python bug",
+            "body": "A simple issue.",
+            "repository_url": "https://api.github.com/repos/example/project",
+            "html_url": "https://github.com/example/project/issues/103",
+            "labels": []
+        }
+    ]
+
+    monkeypatch.setattr(
+        app_module,
+        "fetch_issues",
+        lambda language, label, count: sample_issues
+    )
+
+    response = client.post(
+        "/recommendations",
+        json={
+            "skills": ["Python"],
+            "language": "python",
+            "min_score": 21
+        }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 0
+    assert data["recommendations"] == []
