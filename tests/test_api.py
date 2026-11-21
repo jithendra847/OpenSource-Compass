@@ -455,3 +455,54 @@ def test_get_issues_github_request_error(monkeypatch):
     assert response.json()["detail"] == (
         "GitHub request failed. Please try again."
     )
+
+
+def test_get_issues_count_below_minimum():
+    response = client.get("/issues", params={"count": 0})
+    assert response.status_code == 422
+
+
+def test_get_issues_count_above_maximum():
+    response = client.get("/issues", params={"count": 51})
+    assert response.status_code == 422
+
+
+def test_recommendations_count_below_minimum():
+    response = client.post(
+        "/recommendations",
+        json={"skills": ["Python"], "count": 0}
+    )
+    assert response.status_code == 422
+
+
+def test_recommendations_count_above_maximum():
+    response = client.post(
+        "/recommendations",
+        json={"skills": ["Python"], "count": 51}
+    )
+    assert response.status_code == 422
+
+
+def test_recommendations_negative_min_score():
+    response = client.post(
+        "/recommendations",
+        json={"skills": ["Python"], "min_score": -1}
+    )
+    assert response.status_code == 422
+
+
+def test_get_issues_empty_language():
+    response = client.get("/issues", params={"language": ""})
+    assert response.status_code == 422
+
+
+def test_recommendations_empty_language():
+    response = client.post(
+        "/recommendations",
+        json={
+            "skills": ["Python"],
+            "language": ""
+        }
+    )
+
+    assert response.status_code == 422

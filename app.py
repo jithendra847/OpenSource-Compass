@@ -20,7 +20,7 @@ class IssueSearch(BaseModel):
 
 class RecommendationRequest(BaseModel):
     skills: list[str] = Field(min_length=1)
-    language: str = "python"
+    language: str = Field(default="python", min_length=1)
     label: str | None = None
     count: int = Field(default=20, ge=1, le=50)
     min_score: int = Field(default=10, ge=0)
@@ -89,7 +89,7 @@ def home():
 
 @app.get("/issues", response_model=IssueSearchResponse)
 def get_issues(
-    language: str = "python",
+    language: str = Query(default="python", min_length=1),
     label: str = "good first issue",
     count: int = Query(default=10, ge=1, le=50)
 ):
