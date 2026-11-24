@@ -1,4 +1,21 @@
+import pytest
+
+from ai.llm_client import LLMAPIError
+from models.analysis import IssueSummary
 from ai.summarizer import clean_markdown, summarize_issue
+
+
+@pytest.fixture(autouse=True)
+def mock_llm_failure(monkeypatch):
+    """Force the summarizer to use its fallback during existing tests."""
+
+    def fake_generate_structured(*args, **kwargs):
+        raise LLMAPIError("Mocked LLM failure")
+
+    monkeypatch.setattr(
+        "ai.summarizer.generate_structured",
+        fake_generate_structured,
+    )
 
 
 def test_summary_uses_issue_body():
@@ -78,3 +95,42 @@ def test_clean_markdown_handles_empty_input():
 def test_summary_model_returns_non_empty_text():
     result = summarize_issue("Fix issue", "Improve error handling.")
     assert result.summary.strip()
+
+
+def test_summary_uses_ai_when_successful(monkeypatch):
+    expected = IssueSummary(
+        summary="Handle empty email inputs to prevent API crashes."
+    )
+
+    def fake_generate_structured(*args, **kwargs):
+        return expected
+
+    monkeypatch.setattr(
+        "ai.summarizer.generate_structured",
+        fake_generate_structured,
+    )
+
+    result = summarize_issue(
+        "Fix API crash",
+        "The API crashes when the email field is empty."
+    )
+
+    assert result == expected
+    assert result.summary == "Handle empty email inputs to prevent API crashes."
+
+
+def test_empty_ai_summary_uses_fallback(monkeypatch):
+    def fake_generate_structured(*args, **kwargs):
+        return IssueSummary(summary="   ")
+
+    monkeypatch.setattr(
+        "ai.summarizer.generate_structured",
+        fake_generate_structured,
+    )
+
+    result = summarize_issue(
+        "Fix API crash",
+        "The API crashes when email is empty."
+    )
+
+    assert result.summary == "The API crashes when email is empty."
