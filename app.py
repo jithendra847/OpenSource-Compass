@@ -2,6 +2,8 @@
 import requests
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel, Field
 
 from github_service import fetch_issues
@@ -170,6 +172,18 @@ GitHub is the external data source for issue discovery.
             "description": "Find open-source issues based on developer skills."
         }
     ]
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
