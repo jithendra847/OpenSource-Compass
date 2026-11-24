@@ -533,6 +533,9 @@ def test_openapi_endpoint_tags():
     assert data["paths"]["/recommendations"]["post"]["tags"] == [
         "Recommendations"
     ]
+    assert data["paths"]["/analyze-issue"]["post"]["tags"] == [
+    "Analysis"
+]
 
 
 def test_openapi_endpoint_documentation():
@@ -573,3 +576,94 @@ def test_openapi_request_model_documentation():
     assert issue_search_schema["count"]["minimum"] == 1
     assert issue_search_schema["count"]["maximum"] == 50
     assert issue_search_schema["language"]["description"]
+
+    issue_analysis_schema = schemas["IssueAnalysisRequest"]["properties"]
+
+    assert issue_analysis_schema["title"]["minLength"] == 1
+    assert issue_analysis_schema["title"]["description"]
+
+    assert issue_analysis_schema["body"]["description"]
+    assert issue_analysis_schema["labels"]["description"]
+    assert issue_analysis_schema["user_skills"]["description"]
+
+        # Verify IssueAnalysis response schema
+    analysis_schema = schemas["IssueAnalysis"]["properties"]
+
+    assert "difficulty" in analysis_schema
+    assert "difficulty_reason" in analysis_schema
+    assert "required_skills" in analysis_schema
+    assert "summary" in analysis_schema
+    assert "suitability" in analysis_schema
+
+    # Verify suitability response schema
+    suitability_schema = schemas["SuitabilityAnalysis"]["properties"]
+
+    assert "fit_score" in suitability_schema
+    assert "matched_skills" in suitability_schema
+    assert "missing_skills" in suitability_schema
+    assert "recommendation" in suitability_schema
+    assert "preparation_skills" in suitability_schema
+
+
+# --------------------------------
+# M8.9 - ISSUE ANALYSIS API TESTS
+# --------------------------------
+
+def test_analyze_issue_success(monkeypatch):
+
+    def mock_analyze_issue(title, body, labels, user_skills):
+        return {
+            "difficulty": "Beginner",
+            "difficulty_reason": "A straightforward issue.",
+            "required_skills": ["Python"],
+            "summary": "Fix a Python authentication bug.",
+            "suitability": {
+                "fit_score": 90,
+                "suitable": True,
+                "matched_skills": ["Python"],
+                "missing_skills": [],
+                "recommendation": "Ready to try",
+                "reason": "Your skills match the issue.",
+                "preparation_skills": []
+            }
+        }
+
+    monkeypatch.setattr(
+        app_module,
+        "analyze_issue",
+        mock_analyze_issue
+    )
+
+    response = client.post(
+        "/analyze-issue",
+        json={
+            "title": "Fix Python authentication bug",
+            "body": "Improve authentication handling.",
+            "labels": ["good first issue"],
+            "user_skills": ["Python"]
+        }
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["difficulty"] == "Beginner"
+    assert data["required_skills"] == ["Python"]
+    assert data["summary"] == "Fix a Python authentication bug."
+    assert data["suitability"]["fit_score"] == 90
+    assert data["suitability"]["recommendation"] == "Ready to try"
+
+def test_analyze_issue_empty_title():
+
+    response = client.post(
+        "/analyze-issue",
+        json={
+            "title": "",
+            "body": "Some issue description.",
+            "labels": ["bug"],
+            "user_skills": ["Python"]
+        }
+    )
+
+    assert response.status_code == 422

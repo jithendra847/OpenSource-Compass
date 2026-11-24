@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 from github_service import fetch_issues
 from recommendation_engine import recommend_issues
 
+from ai.issue_analyzer import analyze_issue
+from models.analysis import IssueAnalysis
+
 
 # --------------------------------
 # 1. REQUEST MODELS
@@ -58,6 +61,26 @@ class RecommendationRequest(BaseModel):
         description="Minimum recommendation score required for an issue."
     )
 
+
+class IssueAnalysisRequest(BaseModel):
+    """Parameters required to analyze an open-source issue."""
+
+    title: str = Field(
+        min_length=1,
+        description="Title of the GitHub issue."
+    )
+    body: str = Field(
+        default="",
+        description="Description of the GitHub issue."
+    )
+    labels: list[str] = Field(
+        default_factory=list,
+        description="Labels attached to the GitHub issue."
+    )
+    user_skills: list[str] = Field(
+        default_factory=list,
+        description="Programming skills known by the developer."
+    )
 
 # --------------------------------
 # 2. RESPONSE MODELS
@@ -382,3 +405,29 @@ def get_recommendations(request: RecommendationRequest):
         "total": len(results),
         "recommendations": results
     }
+
+
+# --------------------------------
+# 8. AI ISSUE ANALYSIS
+# --------------------------------
+
+@app.post(
+    "/analyze-issue",
+    response_model=IssueAnalysis,
+    tags=["Analysis"],
+    summary="Analyze an open-source issue",
+    description="""
+    Analyze an issue's difficulty, required skills,
+    summary, and suitability for the developer.
+    """
+)
+def analyze_github_issue(request: IssueAnalysisRequest):
+
+    result = analyze_issue(
+        title=request.title,
+        body=request.body,
+        labels=request.labels,
+        user_skills=request.user_skills,
+    )
+
+    return result
