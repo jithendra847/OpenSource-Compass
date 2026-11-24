@@ -14,7 +14,10 @@ from models.analysis import IssueAnalysis
 
 from ai.recommendation_service import enrich_recommendations
 
+from ai.repository_context import fetch_repository_context
+from ai.repository_analyzer import analyze_repository_issue
 
+from ai.llm_client import LLMAPIError
 # --------------------------------
 # 1. REQUEST MODELS
 # --------------------------------
@@ -85,6 +88,15 @@ class IssueAnalysisRequest(BaseModel):
         default_factory=list,
         description="Programming skills known by the developer."
     )
+    repository: str | None = Field(
+    default=None,
+    description="GitHub repository in owner/name format."
+    ) 
+    issue_number: int | None = Field(
+    default=None,
+    gt=0,
+    description="GitHub issue number."
+    )
 
 # --------------------------------
 # 2. RESPONSE MODELS
@@ -110,6 +122,8 @@ class RecommendationItem(BaseModel):
     """An issue ranked by skill relevance and AI analysis."""
 
     id: int | None = None
+    issue_number: int | None = None
+    repository_url: str | None = None
     title: str
     repository: str
     labels: list[str]
@@ -414,6 +428,8 @@ def get_recommendations(request: RecommendationRequest):
 
         results.append({
             "id": issue["id"],
+            "issue_number": issue.get("issue_number"),
+            "repository_url": repository_url,
             "title": issue["title"],
             "repository": repository,
             "labels": issue["labels"],
@@ -426,6 +442,7 @@ def get_recommendations(request: RecommendationRequest):
             "hybrid_score": issue["hybrid_score"],
             "analysis": issue["analysis"],
             "analysis_status": issue["analysis_status"],
+            
         })
 
     return {
@@ -445,16 +462,80 @@ def get_recommendations(request: RecommendationRequest):
     summary="Analyze an open-source issue",
     description="""
     Analyze an issue's difficulty, required skills,
-    summary, and suitability for the developer.
+    summary, and suitability and optionally its source code.
     """
 )
 def analyze_github_issue(request: IssueAnalysisRequest):
 
+    # Run the existing issue analysis first.
     result = analyze_issue(
         title=request.title,
         body=request.body,
         labels=request.labels,
         user_skills=request.user_skills,
     )
+
+    # Repository analysis is optional.
+    if not request.repository:
+        return result
+
+    if not request.issue_number:
+        raise HTTPException(
+            status_code=422,
+            detail="issue_number is required when repository is provided.",
+        )
+
+    # Validate repository format: owner/repository
+    parts = request.repository.split("/")
+
+    if len(parts) != 2 or not all(parts):
+        raise HTTPException(
+            status_code=422,
+            detail="Repository must use the format 'owner/repository'.",
+        )
+
+    owner, repo = parts
+
+    try:
+        # Retrieve relevant source code from GitHub.
+        repository_context = fetch_repository_context(
+            owner=owner,
+            repo=repo,
+            issue_title=request.title,
+            issue_body=request.body,
+        )
+
+        # Generate the detailed contribution guide.
+        repository_result = analyze_repository_issue(
+            title=request.title,
+            body=request.body,
+            labels=request.labels,
+            user_skills=request.user_skills,
+            repository_context=repository_context,
+        )
+
+        result.repository_analysis = repository_result
+
+    except requests.RequestException as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not retrieve repository information from GitHub: {error}",
+        ) from error
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+    except LLMAPIError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "AI analysis is temporarily unavailable because "
+                "the model provider has reached its usage limit. "
+                "Please try again later."
+            ),
+        ) from error
 
     return result

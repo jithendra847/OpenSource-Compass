@@ -274,6 +274,9 @@ function App() {
   }
 
   const openAnalysis = async (issue) => {
+  console.log('Repository:', issue.repository)
+  console.log('Issue number:', issue.issue_number)
+  console.log('Full issue:', issue)
     setSelectedIssue(issue)
     setAnalysis(null)
     setAnalyzing(true)
@@ -283,17 +286,15 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: issue.title,
-          body: issue.body,
-          issue_title: issue.title,
-          issue_body: issue.body,
-          repository: issue.repository,
-          repo_name: issue.repository,
-          html_url: issue.html_url,
-          language: issue.language,
-          skills
-        })
+        title: issue.title,
+        body: issue.body || '',
+        labels: issue.labels || [],
+        user_skills: skills,
+        repository: issue.repository,
+        issue_number: issue.issue_number
       })
+})
+        
 
       const data = await response.json()
 
@@ -861,7 +862,7 @@ function App() {
                 rel="noreferrer"
                 className="repo-link"
               >
-                <Github size={15} />
+                <Code2 size={15} />
                 {selectedIssue.repository}
                 <ExternalLink size={13} />
               </a>
@@ -935,6 +936,9 @@ function App() {
                   >
                     <PreparationSteps analysis={analysis} issue={selectedIssue} />
                   </AnalysisSection>
+                  <RepositoryContributionGuide
+                    analysis={analysis?.repository_analysis}
+                  />
 
                   <div className="drawer-actions">
                     <button
@@ -986,7 +990,7 @@ function IssueCard({
     <article className="issue-card">
       <div className="issue-card-top">
         <div className="repository-label">
-          <Github size={15} />
+          <Code2 size={15} />
           {issue.repository}
         </div>
         <button
@@ -1128,6 +1132,143 @@ function PreparationSteps({ analysis, issue }) {
     </ol>
   )
 }
+
+
+function RepositoryContributionGuide({ analysis }) {
+  if (!analysis) return null
+
+  return (
+    <div className="repository-guide">
+      <div className="repository-guide-heading">
+        <span className="repository-guide-label">
+          REPOSITORY INTELLIGENCE
+        </span>
+        <h3>Contribution guide</h3>
+        <p>
+          Understand the codebase, investigate the issue,
+          and plan your implementation.
+        </p>
+      </div>
+
+      {analysis.repository_summary && (
+        <AnalysisSection
+          icon={BookOpen}
+          title="Repository overview"
+        >
+          <p>{analysis.repository_summary}</p>
+        </AnalysisSection>
+      )}
+
+      {analysis.issue_interpretation && (
+        <AnalysisSection
+          icon={Lightbulb}
+          title="What this issue means"
+        >
+          <p>{analysis.issue_interpretation}</p>
+        </AnalysisSection>
+      )}
+
+      {analysis.relevant_files?.length > 0 && (
+        <AnalysisSection
+          icon={Code2}
+          title="Relevant source files"
+        >
+          <div className="repository-files">
+            {analysis.relevant_files.map((file, index) => (
+              <div className="repository-file" key={`${file.path}-${index}`}>
+                <div className="repository-file-path">
+                  <Code2 size={14} />
+                  <code>{file.path}</code>
+                </div>
+
+                <p>{file.purpose}</p>
+
+                {file.evidence && (
+                  <pre className="repository-evidence">
+                    <code>{file.evidence}</code>
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        </AnalysisSection>
+      )}
+
+      {analysis.investigation_notes?.length > 0 && (
+        <AnalysisSection
+          icon={Search}
+          title="Investigation findings"
+        >
+          <ul className="repository-bullet-list">
+            {analysis.investigation_notes.map((note, index) => (
+              <li key={index}>{note}</li>
+            ))}
+          </ul>
+        </AnalysisSection>
+      )}
+
+      {analysis.implementation_steps?.length > 0 && (
+        <AnalysisSection
+          icon={ListChecks}
+          title="Implementation plan"
+        >
+          <ol className="preparation-list">
+            {analysis.implementation_steps.map((step, index) => (
+              <li key={index}>
+                <span className="step-number">
+                  {step.step ?? index + 1}
+                </span>
+
+                <div className="repository-step-content">
+                  {step.file_path && (
+                    <code className="repository-step-path">
+                      {step.file_path}
+                    </code>
+                  )}
+
+                  <p>{step.instruction}</p>
+
+                  {step.reason && (
+                    <span className="repository-step-reason">
+                      Why: {step.reason}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </AnalysisSection>
+      )}
+
+      {analysis.testing_strategy?.length > 0 && (
+        <AnalysisSection
+          icon={Terminal}
+          title="Testing strategy"
+        >
+          <ul className="repository-bullet-list">
+            {analysis.testing_strategy.map((test, index) => (
+              <li key={index}>{test}</li>
+            ))}
+          </ul>
+        </AnalysisSection>
+      )}
+
+      {analysis.uncertainty_notes?.length > 0 && (
+        <AnalysisSection
+          icon={AlertCircle}
+          title="Things to verify"
+        >
+          <ul className="repository-bullet-list">
+            {analysis.uncertainty_notes.map((note, index) => (
+              <li key={index}>{note}</li>
+            ))}
+          </ul>
+        </AnalysisSection>
+      )}
+    </div>
+  )
+}
+
 
 function SkillGrowth({ skills, issues, savedIssues, pipeline, onDiscover }) {
   const stages = ['Saved', 'Preparing', 'Ready', 'Attempted']

@@ -1766,3 +1766,127 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Repository contribution guide */
+
+.repository-guide {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.repository-guide-heading {
+  margin-bottom: 8px;
+}
+
+.repository-guide-label {
+  color: var(--sage);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.repository-guide-heading h3 {
+  margin: 7px 0;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 19px;
+  color: var(--ink);
+}
+
+.repository-guide-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.repository-files {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.repository-file {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, transparent);
+}
+
+.repository-file-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sage);
+  overflow-wrap: anywhere;
+}
+
+.repository-file-path code,
+.repository-step-path {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.repository-file > p {
+  margin: 9px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.repository-evidence {
+  margin: 10px 0 0;
+  padding: 11px;
+  border-radius: 7px;
+  background: var(--background, rgba(0, 0, 0, 0.04));
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.repository-evidence code {
+  color: var(--muted);
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.repository-bullet-list {
+  margin: 0;
+  padding-left: 19px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+.repository-step-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.repository-step-content p {
+  margin: 5px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.repository-step-reason {
+  display: block;
+  margin-top: 5px;
+  color: var(--sage);
+  font-size: 10px;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+.repository-step-path {
+  display: inline-block;
+  margin-bottom: 3px;
+}

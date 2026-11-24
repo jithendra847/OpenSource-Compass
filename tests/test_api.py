@@ -12,6 +12,7 @@ def test_recommendations_success(monkeypatch):
     sample_issues = [
         {
             "id": 101,
+            "number": 101,
             "title": "Fix Python authentication bug",
             "body": "Improve Python authentication handling.",
             "repository_url": "https://api.github.com/repos/example/project",
@@ -85,6 +86,8 @@ def test_recommendations_success(monkeypatch):
     recommendation = data["recommendations"][0]
     assert set(recommendation.keys()) == {
         "id",
+        "issue_number",
+        "repository_url",
         "title",
         "repository",
         "labels",
@@ -100,6 +103,10 @@ def test_recommendations_success(monkeypatch):
     }
 
     assert recommendation["id"] == 101
+    assert recommendation["issue_number"] == 101
+    assert recommendation["repository_url"] == (
+    "https://api.github.com/repos/example/project"
+)
     assert recommendation["url"] == "https://github.com/example/project/issues/101"
     assert recommendation["labels"] == ["good first issue"]
 

@@ -1,5 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, Field
+from models.repository_analysis import RepositoryAnalysis
 
 
 class Difficulty(str, Enum):
@@ -38,3 +39,4 @@ class IssueAnalysis(BaseModel):
     required_skills: list[str]
     summary: str
     suitability: SuitabilityAnalysis
+    repository_analysis: RepositoryAnalysis | None = None

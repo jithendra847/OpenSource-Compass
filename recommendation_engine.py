@@ -203,6 +203,7 @@ def recommend_issues(
 
             recommended.append({
                 "id": issue.get("id"),
+                "issue_number": issue.get("number"),
                 "title": title,
                 "body": body,
                 "url": issue.get("html_url"),
