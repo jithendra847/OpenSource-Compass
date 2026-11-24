@@ -1,0 +1,36 @@
+:root {
+  /* Backgrounds */
+  --color-paper: #f6efdf;
+  --color-panel: #fcf8ee;
+  --color-panel-hover: #f1e8d8;
+
+  /* Text */
+  --color-ink: #2b1d14;
+  --color-muted: #7a6455;
+  --color-subtle: #a18c7b;
+
+  /* Borders */
+  --color-line: #dccfb6;
+
+  /* Brand */
+  --color-brand: #6b4226;
+  --color-brand-soft: #e6d6c3;
+  --color-accent: #c8742b;
+
+  /* Status */
+  --color-success: #5b7a3a;
+  --color-warning: #b7791f;
+  --color-danger: #a63d2f;
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --topbar-height: 76px;
+
+  /* Shapes */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(43, 29, 20, 0.05);
+}
