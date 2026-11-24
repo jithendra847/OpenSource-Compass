@@ -10,6 +10,8 @@ from recommendation_engine import recommend_issues
 from ai.issue_analyzer import analyze_issue
 from models.analysis import IssueAnalysis
 
+from ai.recommendation_service import enrich_recommendations
+
 
 # --------------------------------
 # 1. REQUEST MODELS
@@ -103,7 +105,7 @@ class IssueSearchResponse(BaseModel):
 
 
 class RecommendationItem(BaseModel):
-    """An issue ranked by skill relevance."""
+    """An issue ranked by skill relevance and AI analysis."""
 
     id: int | None = None
     title: str
@@ -115,6 +117,10 @@ class RecommendationItem(BaseModel):
     score: int
     match_percentage: float
     explanation: list[str]
+
+    hybrid_score: float | None = None
+    analysis: IssueAnalysis | None = None
+    analysis_status: str
 
 
 class RecommendationSearchResponse(BaseModel):
@@ -352,6 +358,7 @@ def get_recommendations(request: RecommendationRequest):
             request.min_score
         )
 
+
     except requests.exceptions.Timeout:
         raise HTTPException(
             status_code=503,
@@ -375,7 +382,10 @@ def get_recommendations(request: RecommendationRequest):
             status_code=502,
             detail="GitHub request failed. Please try again."
         )
-
+    recommendations = enrich_recommendations(
+                recommendations,
+                request.skills,
+            )
     # Prepare API response
     results = []
 
@@ -398,7 +408,10 @@ def get_recommendations(request: RecommendationRequest):
             "body_matched_skills": issue["body_matched_skills"],
             "score": issue["score"],
             "match_percentage": issue["match_percentage"],
-            "explanation": issue["explanation"]
+            "explanation": issue["explanation"],
+            "hybrid_score": issue["hybrid_score"],
+            "analysis": issue["analysis"],
+            "analysis_status": issue["analysis_status"],
         })
 
     return {

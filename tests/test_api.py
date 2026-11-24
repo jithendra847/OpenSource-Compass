@@ -29,6 +29,42 @@ def test_recommendations_success(monkeypatch):
         lambda language, label, count: sample_issues
     )
 
+    # Mock AI enrichment to avoid real AI/API calls
+    # Mock AI enrichment to avoid real AI/API calls
+    def mock_enrich_recommendations(recommendations, user_skills):
+
+        enriched = []
+
+        for recommendation in recommendations:
+            enriched.append({
+                **recommendation,
+                "hybrid_score": 92.0,
+                "analysis_status": "analyzed",
+                "analysis": {
+                    "difficulty": "Beginner",
+                    "difficulty_reason": "A straightforward issue.",
+                    "required_skills": ["Python"],
+                    "summary": "Fix a Python authentication bug.",
+                    "suitability": {
+                        "fit_score": 90,
+                        "suitable": True,
+                        "matched_skills": ["Python"],
+                        "missing_skills": [],
+                        "recommendation": "Ready to try",
+                        "reason": "Your skills match the issue.",
+                        "preparation_skills": []
+                    }
+                }
+            })
+
+        return enriched
+
+    monkeypatch.setattr(
+        app_module,
+        "enrich_recommendations",
+        mock_enrich_recommendations
+    )
+
     response = client.post(
         "/recommendations",
         json={
@@ -57,7 +93,10 @@ def test_recommendations_success(monkeypatch):
         "body_matched_skills",
         "score",
         "match_percentage",
-        "explanation"
+        "explanation",
+        "hybrid_score",
+        "analysis",
+        "analysis_status"
     }
 
     assert recommendation["id"] == 101
@@ -72,6 +111,13 @@ def test_recommendations_success(monkeypatch):
         "Python matched in title (+20)",
         "Good first issue label (+5)"
     ]
+
+    assert recommendation["hybrid_score"] == 92.0
+
+    assert recommendation["analysis"]["difficulty"] == "Beginner"
+    assert recommendation["analysis"]["required_skills"] == ["Python"]
+    assert recommendation["analysis"]["suitability"]["fit_score"] == 90
+    assert recommendation["analysis_status"] == "analyzed"
 
     assert data["total"] == len(data["recommendations"])
 

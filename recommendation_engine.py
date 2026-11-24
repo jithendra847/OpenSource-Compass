@@ -204,6 +204,7 @@ def recommend_issues(
             recommended.append({
                 "id": issue.get("id"),
                 "title": title,
+                "body": body,
                 "url": issue.get("html_url"),
                 "repository_url": issue.get("repository_url"),
                 "labels": issue_labels,
